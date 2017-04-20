@@ -1,20 +1,20 @@
 /*
-     fEMR - fast Electronic Medical Records
-     Copyright (C) 2014  Team fEMR
+	 fEMR - fast Electronic Medical Records
+	 Copyright (C) 2014  Team fEMR
 
-     fEMR is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+	 fEMR is free software: you can redistribute it and/or modify
+	 it under the terms of the GNU General Public License as published by
+	 the Free Software Foundation, either version 3 of the License, or
+	 (at your option) any later version.
 
-     fEMR is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+	 fEMR is distributed in the hope that it will be useful,
+	 but WITHOUT ANY WARRANTY; without even the implied warranty of
+	 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	 GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with fEMR.  If not, see <http://www.gnu.org/licenses/>. If
-     you have any questions, contact <info@teamfemr.org>.
+	 You should have received a copy of the GNU General Public License
+	 along with fEMR.  If not, see <http://www.gnu.org/licenses/>. If
+	 you have any questions, contact <info@teamfemr.org>.
 */
 package femr.business.services.system;
 
@@ -53,76 +53,76 @@ import java.util.*;
 
 public class ResearchService implements IResearchService {
 
-    private final IRepository<IResearchEncounter> researchEncounterRepository;
-    private final IRepository<IVital> vitalRepository;
-    private final IRepository<IPatientEncounterTabField> patientEncounterTabFieldRepository;
+	private final IRepository<IResearchEncounter> researchEncounterRepository;
+	private final IRepository<IVital> vitalRepository;
+	private final IRepository<IPatientEncounterTabField> patientEncounterTabFieldRepository;
 
 
-    /**
-     * Initializes the research service and injects the dependence
-     */
-    @Inject
-    public ResearchService(IRepository<IResearchEncounter> researchEncounterRepository,
-                           IRepository<IVital> vitalRepository,
-                           IRepository<IPatientEncounterTabField> patientEncounterTabFieldRepository) {
+	/**
+	 * Initializes the research service and injects the dependence
+	 */
+	@Inject
+	public ResearchService(IRepository<IResearchEncounter> researchEncounterRepository,
+						   IRepository<IVital> vitalRepository,
+						   IRepository<IPatientEncounterTabField> patientEncounterTabFieldRepository) {
 
-        this.researchEncounterRepository = researchEncounterRepository;
-        this.vitalRepository = vitalRepository;
-        this.patientEncounterTabFieldRepository = patientEncounterTabFieldRepository;
-    }
+		this.researchEncounterRepository = researchEncounterRepository;
+		this.vitalRepository = vitalRepository;
+		this.patientEncounterTabFieldRepository = patientEncounterTabFieldRepository;
+	}
 
 
-    @Override
-    public ServiceResponse<File> retrieveCsvExportFile(ResearchFilterItem filters) {
+	@Override
+	public ServiceResponse<File> retrieveCsvExportFile(ResearchFilterItem filters) {
 
-        // Get Vital Ids for below
-        Integer heightFeetId = 0;
-        Integer heightInchesId = 0;
-        IVital vital;
+		// Get Vital Ids for below
+		Integer heightFeetId = 0;
+		Integer heightInchesId = 0;
+		IVital vital;
 
-        // As new patients are encountered, generate a UUID to represent them in the export file
-        Map<Integer, UUID> patientIdMap = new HashMap<>();
+		// As new patients are encountered, generate a UUID to represent them in the export file
+		Map<Integer, UUID> patientIdMap = new HashMap<>();
 
-        //why is this either height or not height?
-        //when it is not height it assumes it's a vital?
-        if (filters.getPrimaryDataset().equals("height")){
+		//why is this either height or not height?
+		//when it is not height it assumes it's a vital?
+		if (filters.getPrimaryDataset().equals("height")){
 
-            ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", "heightFeet");
-            vital = vitalRepository.findOne(query);
+			ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", "heightFeet");
+			vital = vitalRepository.findOne(query);
 
-            heightFeetId = vital.getId();
+			heightFeetId = vital.getId();
 
-            query = QueryProvider.getVitalQuery().where().eq("name", "heightInches");
-            vital = vitalRepository.findOne(query);
+			query = QueryProvider.getVitalQuery().where().eq("name", "heightInches");
+			vital = vitalRepository.findOne(query);
 
-            heightInchesId = vital.getId();
-        }
-        else{
-            String vitalName = filters.getPrimaryDataset();
-            ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", vitalName);
-            vital = vitalRepository.findOne(query);
+			heightInchesId = vital.getId();
+		}
+		else{
+			String vitalName = filters.getPrimaryDataset();
+			ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", vitalName);
+			vital = vitalRepository.findOne(query);
 
-        }
+		}
 
-        ServiceResponse<File> response = new ServiceResponse<>();
+		ServiceResponse<File> response = new ServiceResponse<>();
 
-        // Find Patient Encounters which match the current filters
-        filters.setOrderBy("patientId");
-        List<? extends IResearchEncounter> patientEncounters = queryPatientData(filters);
+		// Find Patient Encounters which match the current filters
+		filters.setOrderBy("patientId");
+		List<? extends IResearchEncounter> patientEncounters = queryPatientData(filters);
 
-        List<ResearchExportItem> researchExportItemsForCSVExport = new ArrayList<>();
-        //this for loop makes sure that the primary dataset is properly filtered when the user enters
-        //a start and end number under "Filter Primary Dataset".
-        //what about weight filters?
-        for(IResearchEncounter patientEncounter : patientEncounters ){
+		List<ResearchExportItem> researchExportItemsForCSVExport = new ArrayList<>();
+		//this for loop makes sure that the primary dataset is properly filtered when the user enters
+		//a start and end number under "Filter Primary Dataset".
+		//what about weight filters?
+		for(IResearchEncounter patientEncounter : patientEncounters ){
 
-            // only filtering age, height, and vitals
-            if( filters.getPrimaryDataset().equals("age") ) {
+			// only filtering age, height, and vitals
+			if( filters.getPrimaryDataset().equals("age") ) {
 
-                Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patientEncounter.getPatient().getAge(), patientEncounter.getDateOfTriageVisit()));
-                // skip encounter if age is out of range
-                if (age < filters.getFilterRangeStart() || age > filters.getFilterRangeEnd()) continue;
-            }
+				Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patientEncounter.getPatient().getAge(), patientEncounter.getDateOfTriageVisit()));
+				// skip encounter if age is out of range
+				if (age < filters.getFilterRangeStart() || age > filters.getFilterRangeEnd()) continue;
+			}
 //            else if( filters.getPrimaryDataset().equals("pregnancyStatus") ||
 //                    filters.getPrimaryDataset().equals("pregnancyTime") ){
 //
@@ -132,311 +132,311 @@ public class ResearchService implements IResearchService {
 //
 //
 //            }
-            else if( filters.getPrimaryDataset().equals("height") ){
+			else if( filters.getPrimaryDataset().equals("height") ){
 
-                ResearchEncounterVital vitalFeet = patientEncounter.getEncounterVitals().get(heightFeetId);
-                ResearchEncounterVital vitalInches = patientEncounter.getEncounterVitals().get(heightInchesId);
+				ResearchEncounterVital vitalFeet = patientEncounter.getEncounterVitals().get(heightFeetId);
+				ResearchEncounterVital vitalInches = patientEncounter.getEncounterVitals().get(heightInchesId);
 
-                // height values may not exist
-                Float vitalValue = 0.0f;
-                if( vitalFeet != null ){
+				// height values may not exist
+				Float vitalValue = 0.0f;
+				if( vitalFeet != null ){
 
-                    vitalValue += vitalFeet.getVitalValue() * 12;
-                }
-                if( vitalInches != null ){
+					vitalValue += vitalFeet.getVitalValue() * 12;
+				}
+				if( vitalInches != null ){
 
-                    vitalValue += vitalInches.getVitalValue();
-                }
+					vitalValue += vitalInches.getVitalValue();
+				}
 
-                if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
+				if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
 
-            }
-            // Check for medication filters
+			}
+			// Check for medication filters
 //            else if( filters.getPrimaryDataset().equals("prescribedMeds") ||
 //                    filters.getPrimaryDataset().equals("dispensedMeds") ){
 //
 //
 //            }
-            else if (vital != null){
+			else if (vital != null){
 
-                ResearchEncounterVital vitals = patientEncounter.getEncounterVitals().get(vital.getId());
-                if( vitals == null ) continue;
+				ResearchEncounterVital vitals = patientEncounter.getEncounterVitals().get(vital.getId());
+				if( vitals == null ) continue;
 
-                Float vitalValue = vitals.getVitalValue();
+				Float vitalValue = vitals.getVitalValue();
 
-                if( vitalValue == null ) continue;
-                if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
-            }
+				if( vitalValue == null ) continue;
+				if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
+			}
 
-            UUID muddledPatientId;
-            // If UUID already generated for patient, use that
-            if( patientIdMap.containsKey(patientEncounter.getPatient().getId()) ){
+			UUID muddledPatientId;
+			// If UUID already generated for patient, use that
+			if( patientIdMap.containsKey(patientEncounter.getPatient().getId()) ){
 
-                muddledPatientId = patientIdMap.get(patientEncounter.getPatient().getId());
-            }
-            // otherwise generate and store for potential additional patient encounters
-            else{
-
-                muddledPatientId = UUID.randomUUID();
-                patientIdMap.put(patientEncounter.getPatient().getId(), muddledPatientId);
-            }
-            ResearchExportItem item = createResearchExportItem(patientEncounter, muddledPatientId);
-            researchExportItemsForCSVExport.add(item);
+				muddledPatientId = patientIdMap.get(patientEncounter.getPatient().getId());
+			}
+			// otherwise generate and store for potential additional patient encounters
+			else{
+
+				muddledPatientId = UUID.randomUUID();
+				patientIdMap.put(patientEncounter.getPatient().getId(), muddledPatientId);
+			}
+			ResearchExportItem item = createResearchExportItem(patientEncounter, muddledPatientId);
+			researchExportItemsForCSVExport.add(item);
 
-        }
+		}
 
-        // Make File and get path
-        String csvFilePath = LogicDoer.getCsvFilePath();
-        //Ensure folder exists, if not, create it
-        File f = new File(csvFilePath);
-        if (!f.exists())
-            f.mkdirs();
-
-        // trailing slash is included in path
-        //CurrentUser currentUser = sessionService.retrieveCurrentUserSession();
-        SimpleDateFormat format = new SimpleDateFormat("MMddyy-HHmmss");
-        String timestamp = format.format(new Date());
-        String csvFileName = csvFilePath+"export-"+timestamp+".csv";
-        File eFile = new File(csvFileName);
-        boolean fileCreated = false;
-        if(!eFile.exists()) {
-            try {
-                fileCreated = eFile.createNewFile();
-            }
-            catch( IOException e ){
-
-                e.printStackTrace();
-            }
-        }
-
-        if( fileCreated ) {
-
-            Gson gson = new Gson();
-            JsonParser gsonParser = new JsonParser();
-            String jsonString = gson.toJson(researchExportItemsForCSVExport);
-
-            GsonFlattener parser = new GsonFlattener();
-            CSVWriterGson writer = new CSVWriterGson();
+		// Make File and get path
+		String csvFilePath = LogicDoer.getCsvFilePath();
+		//Ensure folder exists, if not, create it
+		File f = new File(csvFilePath);
+		if (!f.exists())
+			f.mkdirs();
+
+		// trailing slash is included in path
+		//CurrentUser currentUser = sessionService.retrieveCurrentUserSession();
+		SimpleDateFormat format = new SimpleDateFormat("MMddyy-HHmmss");
+		String timestamp = format.format(new Date());
+		String csvFileName = csvFilePath+"export-"+timestamp+".csv";
+		File eFile = new File(csvFileName);
+		boolean fileCreated = false;
+		if(!eFile.exists()) {
+			try {
+				fileCreated = eFile.createNewFile();
+			}
+			catch( IOException e ){
+
+				e.printStackTrace();
+			}
+		}
+
+		if( fileCreated ) {
+
+			Gson gson = new Gson();
+			JsonParser gsonParser = new JsonParser();
+			String jsonString = gson.toJson(researchExportItemsForCSVExport);
+
+			GsonFlattener parser = new GsonFlattener();
+			CSVWriterGson writer = new CSVWriterGson();
 
-            try {
+			try {
 
-                List<Map<String, String>> flatJson = parser.parse(gsonParser.parse(jsonString).getAsJsonArray());
-                writer.writeAsCSV(flatJson, csvFileName);
+				List<Map<String, String>> flatJson = parser.parse(gsonParser.parse(jsonString).getAsJsonArray());
+				writer.writeAsCSV(flatJson, csvFileName);
 
-            } catch (FileNotFoundException e) {
+			} catch (FileNotFoundException e) {
 
-                e.printStackTrace();
-            }
-        }
-        response.setResponseObject(eFile);
+				e.printStackTrace();
+			}
+		}
+		response.setResponseObject(eFile);
 
-        return response;
-    }
+		return response;
+	}
 
-    private ResearchExportItem createResearchExportItem(IResearchEncounter encounter, UUID patientId){
+	private ResearchExportItem createResearchExportItem(IResearchEncounter encounter, UUID patientId){
 
-        //this item is used to populate one line in the CSV file.
-        ResearchExportItem exportitem = new ResearchExportItem();
+		//this item is used to populate one line in the CSV file.
+		ResearchExportItem exportitem = new ResearchExportItem();
 
-        IPatient patient = encounter.getPatient();
+		IPatient patient = encounter.getPatient();
 
-        // Patient Id
-        exportitem.setPatientId(patientId);
+		// Patient Id
+		exportitem.setPatientId(patientId);
 
-        // Age
-        Integer age = (int)Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
-        exportitem.setAge(age);
+		// Age
+		Integer age = (int)Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
+		exportitem.setAge(age);
 
-        // Gender
-        String gender = StringUtils.outputStringOrNA(patient.getSex());
-        exportitem.setGender(gender);
+		// Gender
+		String gender = StringUtils.outputStringOrNA(patient.getSex());
+		exportitem.setGender(gender);
 
-        // Pregnancy Status
-        Integer wksPregnant = getWeeksPregnant(encounter);
-        exportitem.setWeeksPregnant(wksPregnant);
+		// Pregnancy Status
+		Integer wksPregnant = getWeeksPregnant(encounter);
+		exportitem.setWeeksPregnant(wksPregnant);
 
-        // Week Pregnant
-        if( wksPregnant > 0 ){
-            exportitem.setIsPregnant(true);
-        }
-        else{
-            exportitem.setIsPregnant(false);
-        }
+		// Week Pregnant
+		if( wksPregnant > 0 ){
+			exportitem.setIsPregnant(true);
+		}
+		else{
+			exportitem.setIsPregnant(false);
+		}
 
-        // Chief Complaints
-        List<String> chiefComplaints = new ArrayList<>();
-        for (IChiefComplaint c : encounter.getChiefComplaints()) {
+		// Chief Complaints
+		List<String> chiefComplaints = new ArrayList<>();
+		for (IChiefComplaint c : encounter.getChiefComplaints()) {
 
-            chiefComplaints.add(c.getValue());
-        }
-        exportitem.setChiefComplaints(chiefComplaints);
+			chiefComplaints.add(c.getValue());
+		}
+		exportitem.setChiefComplaints(chiefComplaints);
 
-        // Prescriptions - Prescribed and Dispensed
-        List<String> prescribed = new ArrayList<>();
-        List<String> dispensed = new ArrayList<>();
-        if( encounter.getPatientPrescriptions() != null ) {
-            for (IPatientPrescription p : encounter.getPatientPrescriptions()) {
+		// Prescriptions - Prescribed and Dispensed
+		List<String> prescribed = new ArrayList<>();
+		List<String> dispensed = new ArrayList<>();
+		if( encounter.getPatientPrescriptions() != null ) {
+			for (IPatientPrescription p : encounter.getPatientPrescriptions()) {
 
-                if( p.getDateDispensed() != null ){
+				if( p.getDateDispensed() != null ){
 
-                    dispensed.add(p.getMedication().getName());
-                }
+					dispensed.add(p.getMedication().getName());
+				}
 
-                prescribed.add(p.getMedication().getName());
-            }
-        }
-        exportitem.setDispensedMedications(dispensed);
-        exportitem.setPrescribedMedications(prescribed);
+				prescribed.add(p.getMedication().getName());
+			}
+		}
+		exportitem.setDispensedMedications(dispensed);
+		exportitem.setPrescribedMedications(prescribed);
 
-        // Tab Fields
-        ExpressionList<PatientEncounterTabField> patientEncounterTabFieldExpressionList = QueryProvider.getPatientEncounterTabFieldQuery()
-                .where()
-                .eq("patient_encounter_id", encounter.getId());
-        List<? extends IPatientEncounterTabField> existingPatientEncounterTabFields = patientEncounterTabFieldRepository.find(patientEncounterTabFieldExpressionList);
-        Map<String, String> tabFields = new HashMap<>();
-        if( existingPatientEncounterTabFields.size() > 0 ){
+		// Tab Fields
+		ExpressionList<PatientEncounterTabField> patientEncounterTabFieldExpressionList = QueryProvider.getPatientEncounterTabFieldQuery()
+				.where()
+				.eq("patient_encounter_id", encounter.getId());
+		List<? extends IPatientEncounterTabField> existingPatientEncounterTabFields = patientEncounterTabFieldRepository.find(patientEncounterTabFieldExpressionList);
+		Map<String, String> tabFields = new HashMap<>();
+		if( existingPatientEncounterTabFields.size() > 0 ){
 
-            for( IPatientEncounterTabField tf : existingPatientEncounterTabFields ){
+			for( IPatientEncounterTabField tf : existingPatientEncounterTabFields ){
 
-                tabFields.put(tf.getTabField().getName(), tf.getTabFieldValue());
-            }
-        }
-        exportitem.setTabFieldMap(tabFields);
+				tabFields.put(tf.getTabField().getName(), tf.getTabFieldValue());
+			}
+		}
+		exportitem.setTabFieldMap(tabFields);
 
-        // Vitals
-        Map<Integer, ResearchEncounterVital> vitalMap = encounter.getEncounterVitals();
-        Map<String, Float> vitals = new HashMap<>();
-        for( ResearchEncounterVital vital : vitalMap.values() ){
+		// Vitals
+		Map<Integer, ResearchEncounterVital> vitalMap = encounter.getEncounterVitals();
+		Map<String, Float> vitals = new HashMap<>();
+		for( ResearchEncounterVital vital : vitalMap.values() ){
 
-            vitals.put(vital.getVital().getName(), vital.getVitalValue());
-        }
-        exportitem.setVitalMap(vitals);
+			vitals.put(vital.getVital().getName(), vital.getVitalValue());
+		}
+		exportitem.setVitalMap(vitals);
 
-        //month and year of the encounter
-        exportitem.setDayOfVisit(dateUtils.getFriendlyDateMonthYear(encounter.getDateOfTriageVisit()));
+		//month and year of the encounter
+		exportitem.setDayOfVisit(dateUtils.getFriendlyDateMonthYear(encounter.getDateOfTriageVisit()));
 
-        return exportitem;
+		return exportitem;
 
-    }
+	}
 
-    @Override
-    public ServiceResponse<ResearchResultSetItem> retrieveGraphData(ResearchFilterItem filters){
+	@Override
+	public ServiceResponse<ResearchResultSetItem> retrieveGraphData(ResearchFilterItem filters){
 
-        ServiceResponse<ResearchResultSetItem> response = new ServiceResponse<>();
+		ServiceResponse<ResearchResultSetItem> response = new ServiceResponse<>();
 
-        try {
+		try {
 
-            List<? extends IResearchEncounter> patientEncounters = queryPatientData(filters);
+			List<? extends IResearchEncounter> patientEncounters = queryPatientData(filters);
 
-            ResearchResultSetItem results;
-            if (filters.getPrimaryDataset().equals("age")) {
+			ResearchResultSetItem results;
+			if (filters.getPrimaryDataset().equals("age")) {
 
-                results = buildAgeResultSet(patientEncounters, filters);
-            } else if (filters.getPrimaryDataset().equals("pregnancyStatus") ||
-                    filters.getPrimaryDataset().equals("pregnancyTime")) {
+				results = buildAgeResultSet(patientEncounters, filters);
+			} else if (filters.getPrimaryDataset().equals("pregnancyStatus") ||
+					filters.getPrimaryDataset().equals("pregnancyTime")) {
 
-                results = buildPregnancyResultSet(patientEncounters, filters);
-            } else if (filters.getPrimaryDataset().equals("gender")) {
+				results = buildPregnancyResultSet(patientEncounters, filters);
+			} else if (filters.getPrimaryDataset().equals("gender")) {
 
-                results = buildGenderResultSet(patientEncounters, filters);
-            } else if (filters.getPrimaryDataset().equals("height")) {
+				results = buildGenderResultSet(patientEncounters, filters);
+			} else if (filters.getPrimaryDataset().equals("height")) {
 
-                results = buildHeightResultSet(patientEncounters, filters);
-            }
-            // Check for medication filters
-            else if (filters.getPrimaryDataset().equals("prescribedMeds") ||
-                    filters.getPrimaryDataset().equals("dispensedMeds")) {
+				results = buildHeightResultSet(patientEncounters, filters);
+			}
+			// Check for medication filters
+			else if (filters.getPrimaryDataset().equals("prescribedMeds") ||
+					filters.getPrimaryDataset().equals("dispensedMeds")) {
 
-                results = buildMedicationResultSet(patientEncounters, filters);
-            }
+				results = buildMedicationResultSet(patientEncounters, filters);
+			}
 
-            // non-special situations are all considered vitals
-            else{
+			// non-special situations are all considered vitals
+			else{
 
-                results = buildVitalResultSet(patientEncounters, filters);
-            }
+				results = buildVitalResultSet(patientEncounters, filters);
+			}
 
-            // Handle Grouping, if needed
-            results = groupData(results, filters);
-            response.setResponseObject(results);
+			// Handle Grouping, if needed
+			results = groupData(results, filters);
+			response.setResponseObject(results);
 
-        } catch (Exception ex) {
+		} catch (Exception ex) {
 
-            response.addError("exception", ex.getMessage());
-        }
+			response.addError("exception", ex.getMessage());
+		}
 
-        return response;
-    }
+		return response;
+	}
 
-    /**
-     * take filters and make appropriate query, get list of matching patient encounters
-     * @param filters an object that contains all possible filters for the data
-     * @return a list of the encounters
-     */
-    private List<? extends IResearchEncounter> queryPatientData(ResearchFilterItem filters){
+	/**
+	 * take filters and make appropriate query, get list of matching patient encounters
+	 * @param filters an object that contains all possible filters for the data
+	 * @return a list of the encounters
+	 */
+	private List<? extends IResearchEncounter> queryPatientData(ResearchFilterItem filters){
 
-        String datasetName = filters.getPrimaryDataset();
+		String datasetName = filters.getPrimaryDataset();
 
-        String startDateString = filters.getStartDate();
-        String endDateString = filters.getEndDate();
-        Date startDateObj;
-        Date endDateObj;
-        SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String startDateString = filters.getStartDate();
+		String endDateString = filters.getEndDate();
+		Date startDateObj;
+		Date endDateObj;
+		SimpleDateFormat sqlFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-        try {
+		try {
 
-            // Set Start Date to start of day
-            String startParseDate = startDateString + " 00:00:00";
-            startDateObj = sqlFormat.parse(startParseDate);
+			// Set Start Date to start of day
+			String startParseDate = startDateString + " 00:00:00";
+			startDateObj = sqlFormat.parse(startParseDate);
 
-            // Set End Date to end of day
-            String parseEndDate = endDateString + " 23:59:59";
-            endDateObj = sqlFormat.parse(parseEndDate);
-        }
-        catch(ParseException e){
+			// Set End Date to end of day
+			String parseEndDate = endDateString + " 23:59:59";
+			endDateObj = sqlFormat.parse(parseEndDate);
+		}
+		catch(ParseException e){
 
-            startDateObj = null;
-            endDateObj = null;
-        }
+			startDateObj = null;
+			endDateObj = null;
+		}
 
-        // Build Query based on Filters
-        Query<ResearchEncounter> researchEncounterQuery = QueryProvider.getResearchEncounterQuery();
-                researchEncounterQuery.fetch("patient");
+		// Build Query based on Filters
+		Query<ResearchEncounter> researchEncounterQuery = QueryProvider.getResearchEncounterQuery();
+				researchEncounterQuery.fetch("patient");
 
 
-        if( datasetName.equals("prescribedMeds") || datasetName.equals("dispensedMeds") ){
+		if( datasetName.equals("prescribedMeds") || datasetName.equals("dispensedMeds") ){
 
-            researchEncounterQuery.fetch("patientPrescriptions");
-        }
+			researchEncounterQuery.fetch("patientPrescriptions");
+		}
 
-        // filtering by medication, so make sure to fetch the medication info
-        if( filters.getMedicationName() != null && filters.getMedicationName().length() > 0 ){
+		// filtering by medication, so make sure to fetch the medication info
+		if( filters.getMedicationName() != null && filters.getMedicationName().length() > 0 ){
 
-            researchEncounterQuery.fetch("patientPrescriptions.medication");
-        }
+			researchEncounterQuery.fetch("patientPrescriptions.medication");
+		}
 
-        ExpressionList<ResearchEncounter> researchEncounterExpressionList = researchEncounterQuery.where();
+		ExpressionList<ResearchEncounter> researchEncounterExpressionList = researchEncounterQuery.where();
 
-        // filter by date - can have only start, or only end date
-        if( startDateObj != null ) {
-            researchEncounterExpressionList.gt("dateOfTriageVisit", sqlFormat.format(startDateObj));
-        }
-        if( endDateObj != null ) {
-            researchEncounterExpressionList.lt("dateOfTriageVisit", sqlFormat.format(endDateObj));
-        }
+		// filter by date - can have only start, or only end date
+		if( startDateObj != null ) {
+			researchEncounterExpressionList.gt("dateOfTriageVisit", sqlFormat.format(startDateObj));
+		}
+		if( endDateObj != null ) {
+			researchEncounterExpressionList.lt("dateOfTriageVisit", sqlFormat.format(endDateObj));
+		}
 
-        // filtering by medication if the name is set
-        if( filters.getMedicationName() != null && filters.getMedicationName().length() > 0 ){
+		// filtering by medication if the name is set
+		if( filters.getMedicationName() != null && filters.getMedicationName().length() > 0 ){
 
-            researchEncounterExpressionList.like("patientPrescriptions.medication.name", "%" + filters.getMedicationName() + "%");
-        }
+			researchEncounterExpressionList.like("patientPrescriptions.medication.name", "%" + filters.getMedicationName() + "%");
+		}
 
-        if ( filters.getMissionTripId() != null) {
+		if ( filters.getMissionTripId() != null) {
 
-            researchEncounterExpressionList.eq("missionTrip.id",filters.getMissionTripId()); //Andrew Trip Filter
-        }
+			researchEncounterExpressionList.eq("missionTrip.id",filters.getMissionTripId()); //Andrew Trip Filter
+		}
 
-        // if the filters exist - use them in the query
+		// if the filters exist - use them in the query
 //        if( filters.getFilterRangeStart() > -1 * Float.MAX_VALUE ){
 //
 //            if( filters.getPrimaryDataset().equals("age") ){
@@ -463,1086 +463,1012 @@ public class ResearchService implements IResearchService {
 //                e.ge("patient.age", sqlFormat.format(maxBirthDate.toDate()));
 //            }
 //        }
-        researchEncounterExpressionList.isNull("patient.isDeleted");
-        // add age specific parameters
-        if( datasetName.equals("age") ) {
+		researchEncounterExpressionList.isNull("patient.isDeleted");
+		// add age specific parameters
+		if( datasetName.equals("age") ) {
 
-            researchEncounterExpressionList.ne("patient.age", null);
-            researchEncounterExpressionList.orderBy().desc("patient.age");
-        }
+			researchEncounterExpressionList.ne("patient.age", null);
+			researchEncounterExpressionList.orderBy().desc("patient.age");
+		}
 
-        if( filters.getOrderBy() != null && filters.getOrderBy().equals("patientId") ){
+		if( filters.getOrderBy() != null && filters.getOrderBy().equals("patientId") ){
 
-            researchEncounterExpressionList.orderBy().desc("patient.id");
-        }
-        else {
-            researchEncounterExpressionList.orderBy().desc("date_of_triage_visit");
-        }
+			researchEncounterExpressionList.orderBy().desc("patient.id");
+		}
+		else {
+			researchEncounterExpressionList.orderBy().desc("date_of_triage_visit");
+		}
 
 
-        researchEncounterExpressionList.findList();
-        return researchEncounterRepository.find(researchEncounterExpressionList);
+		researchEncounterExpressionList.findList();
+		return researchEncounterRepository.find(researchEncounterExpressionList);
 
-    }
+	}
 
-    private ResearchResultSetItem groupData(ResearchResultSetItem results, ResearchFilterItem filters){
+	private ResearchResultSetItem groupData(ResearchResultSetItem results, ResearchFilterItem filters){
 
-        // Force grouping if not already chosen
-        /*
-        if( !filters.isGroupPrimary() ){
+		// Force grouping if not already chosen
+		/*
+		if( !filters.isGroupPrimary() ){
 
-            if( results.getDataset().size() > 30 ){
+			if( results.getDataset().size() > 30 ){
 
-                filters.setGroupPrimary(true);
-                // default to 20 groups
-                //int groupFactor = results.getDataset().size() / 20;
-                int groupFactor = 10;
-                filters.setGroupFactor(groupFactor);
-            }
-        }
-        */
+				filters.setGroupPrimary(true);
+				// default to 20 groups
+				//int groupFactor = results.getDataset().size() / 20;
+				int groupFactor = 10;
+				filters.setGroupFactor(groupFactor);
+			}
+		}
+		*/
 
-        // Build group key values -- don't bother if there will only be 1 group
-        // make happen automatically too? -- results.getDataset().size() > 20
-        if( filters.isGroupPrimary() && results.getDataset().size() > filters.getGroupFactor() ) {
+		// Build group key values -- don't bother if there will only be 1 group
+		// make happen automatically too? -- results.getDataset().size() > 20
+		if( filters.isGroupPrimary() && results.getDataset().size() > filters.getGroupFactor() ) {
 
-            int groupFactor = filters.getGroupFactor();
+			int groupFactor = filters.getGroupFactor();
 
-            // Start first range at lowest multiple near the first item
-            // Ex: first item is 25, group factor is 10 -- firstLowKey 20
-            int firstLowKey = (int)Math.floor(results.getDataRangeLow() / groupFactor) * groupFactor;
+			// Start first range at lowest multiple near the first item
+			// Ex: first item is 25, group factor is 10 -- firstLowKey 20
+			int firstLowKey = (int)Math.floor(results.getDataRangeLow() / groupFactor) * groupFactor;
 
-            // End range set at the highest multiple near last item
-            // Ex: last item is 47, group factor is 10 -- lastLowKey is 40
-            int lastLowKey = (int)Math.floor(results.getDataRangeHigh() / groupFactor) * groupFactor;
+			// End range set at the highest multiple near last item
+			// Ex: last item is 47, group factor is 10 -- lastLowKey is 40
+			int lastLowKey = (int)Math.floor(results.getDataRangeHigh() / groupFactor) * groupFactor;
 
-            List<ResearchResultItem> resultDataset = results.getDataset();
-            List<ResearchResultItem> newResultDataset = new ArrayList<>();
-            Set<String> secondaryKeys = null;
+			List<ResearchResultItem> resultDataset = results.getDataset();
+			List<ResearchResultItem> newResultDataset = new ArrayList<>();
+			Set<String> secondaryKeys = null;
 
 
-            for( int lowKey = firstLowKey; lowKey <= lastLowKey; lowKey+=groupFactor ){
+			for( int lowKey = firstLowKey; lowKey <= lastLowKey; lowKey+=groupFactor ){
 
-                /* -- Start first range at first value in the range
-                int lowTemp = lowKey;
-                if( lowKey < filters.getFilterRangeStart() ){
+				/* -- Start first range at first value in the range
+				int lowTemp = lowKey;
+				if( lowKey < filters.getFilterRangeStart() ){
 
-                    lowTemp = filters.getFilterRangeStart().intValue();
-                }
-                */
+					lowTemp = filters.getFilterRangeStart().intValue();
+				}
+				*/
 
-                int highKey = lowKey + (groupFactor - 1);
-                /*
-                if( highKey > filters.getFilterRangeEnd() ){
+				int highKey = lowKey + (groupFactor - 1);
+				/*
+				if( highKey > filters.getFilterRangeEnd() ){
 
-                    highKey = filters.getFilterRangeEnd().intValue();
-                }
-                */
+					highKey = filters.getFilterRangeEnd().intValue();
+				}
+				*/
 
-                String groupIndexString = String.format("%d - %d", lowKey, highKey);
+				String groupIndexString = String.format("%d - %d", lowKey, highKey);
 
-                ResearchResultItem newResultItem = new ResearchResultItem();
-                newResultItem.setPrimaryName(groupIndexString);
+				ResearchResultItem newResultItem = new ResearchResultItem();
+				newResultItem.setPrimaryName(groupIndexString);
 
-                Iterator<ResearchResultItem> itr = resultDataset.listIterator();
-                while(itr.hasNext()) {
+				Iterator<ResearchResultItem> itr = resultDataset.listIterator();
+				while(itr.hasNext()) {
 
-                    ResearchResultItem item = itr.next();
+					ResearchResultItem item = itr.next();
 
-                    String itemNameString = item.getPrimaryName();
-                    Float itemNameValue;
-                    try {
-                        itemNameValue = Float.valueOf(itemNameString);
-                    }
-                    catch(NumberFormatException e){
-                        // skip iteration
-                        continue;
-                    }
+					String itemNameString = item.getPrimaryName();
+					Float itemNameValue;
+					try {
+						itemNameValue = Float.valueOf(itemNameString);
+					}
+					catch(NumberFormatException e){
+						// skip iteration
+						continue;
+					}
 
-                    if( itemNameValue < highKey ) {
+					if( itemNameValue < highKey ) {
 
-                        // add total for current item to grouped total
-                        Float currVal = newResultItem.getPrimaryValue();
-                        newResultItem.setPrimaryValue(currVal + item.getPrimaryValue());
+						// add total for current item to grouped total
+						Float currVal = newResultItem.getPrimaryValue();
+						newResultItem.setPrimaryValue(currVal + item.getPrimaryValue());
 
-                        // copy over secondary data too
-                        if( item.getSecondaryData() != null ) {
+						// copy over secondary data too
+						if( item.getSecondaryData() != null ) {
 
-                            Map<String, Float> oldSecondaryData = item.getSecondaryData();
-                            if( secondaryKeys == null ){
-                                // each item should contain all keys, even if zero
-                                // only need to get this value once
-                                secondaryKeys = oldSecondaryData.keySet();
-                            }
+							Map<String, Float> oldSecondaryData = item.getSecondaryData();
+							if( secondaryKeys == null ){
+								// each item should contain all keys, even if zero
+								// only need to get this value once
+								secondaryKeys = oldSecondaryData.keySet();
+							}
 
-                            // get grouped secondary dataset and ensure its initialized
-                            Map<String, Float> newSecondaryData = newResultItem.getSecondaryData();
-                            if(newSecondaryData == null ){
+							// get grouped secondary dataset and ensure its initialized
+							Map<String, Float> newSecondaryData = newResultItem.getSecondaryData();
+							if(newSecondaryData == null ){
 
-                                newSecondaryData = new HashMap<>();
-                            }
+								newSecondaryData = new HashMap<>();
+							}
 
-                            // always check each item for all possible secondary keys
-                            for (String key : secondaryKeys) {
+							// always check each item for all possible secondary keys
+							for (String key : secondaryKeys) {
 
-                                Float oldVal = oldSecondaryData.get(key);
-                                if (newSecondaryData.containsKey(key)) {
+								Float oldVal = oldSecondaryData.get(key);
+								if (newSecondaryData.containsKey(key)) {
 
-                                    Float newVal = newSecondaryData.get(key);
-                                    newSecondaryData.put(key, newVal + oldVal);
+									Float newVal = newSecondaryData.get(key);
+									newSecondaryData.put(key, newVal + oldVal);
 
-                                } else {
+								} else {
 
-                                    newSecondaryData.put(key, oldVal);
-                                }
-                            }
-                            newResultItem.setSecondaryData(newSecondaryData);
-                        }
+									newSecondaryData.put(key, oldVal);
+								}
+							}
+							newResultItem.setSecondaryData(newSecondaryData);
+						}
 
-                        // once item is added to new list remove from current list
-                        itr.remove();
-                    }
-                    else{
+						// once item is added to new list remove from current list
+						itr.remove();
+					}
+					else{
 
-                        // values are sorted, so exit an continue to next group
-                        // no items exist for current range
-                        break;
-                    }
+						// values are sorted, so exit an continue to next group
+						// no items exist for current range
+						break;
+					}
 
-                } // end while
+				} // end while
 
-                // if secondary keys exist, make the the item has at least 0 values for each key
-                // this will happen when no items match for the current range
-                if( newResultItem.getSecondaryData() == null && secondaryKeys != null ){
+				// if secondary keys exist, make the the item has at least 0 values for each key
+				// this will happen when no items match for the current range
+				if( newResultItem.getSecondaryData() == null && secondaryKeys != null ){
 
-                    // if there is secondary data, make sure 0 values are set for each key
-                    Map<String, Float> newSecondaryData = new HashMap<>();
-                    for (String key : secondaryKeys) {
+					// if there is secondary data, make sure 0 values are set for each key
+					Map<String, Float> newSecondaryData = new HashMap<>();
+					for (String key : secondaryKeys) {
 
-                        newSecondaryData.put(key, 0.0f);
-                    }
-                    newResultItem.setSecondaryData(newSecondaryData);
-                }
+						newSecondaryData.put(key, 0.0f);
+					}
+					newResultItem.setSecondaryData(newSecondaryData);
+				}
 
-                newResultDataset.add(newResultItem);
+				newResultDataset.add(newResultItem);
 
-            } // end foreach
-            results.setDataset(newResultDataset);
+			} // end foreach
+			results.setDataset(newResultDataset);
 
-        }
-        return results;
-    }
+		}
+		return results;
+	}
 
 
 
-    // do stuff specific to vitals request
-    private ResearchResultSetItem buildMedicationResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
+	// do stuff specific to vitals request
+	private ResearchResultSetItem buildMedicationResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-        // used to calculate average
-        float encountersTotal = 0;
-        float patientsTotal = 0;
+		// used to calculate average
+		float encountersTotal = 0;
+		float patientsTotal = 0;
 
-        // Map to keep track of total patient for each vital_value
-        // Keep keys in sorted order while totaling patients
-        Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
+		// Map to keep track of total patient for each vital_value
+		// Keep keys in sorted order while totaling patients
+		Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
 
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
 
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType(filters.getPrimaryDataset());
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType(filters.getPrimaryDataset());
 
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-            IPatient patient = encounter.getPatient();
+			IPatient patient = encounter.getPatient();
 
-            encountersTotal++;
+			encountersTotal++;
 
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-            patientsTotal++;
+			patientsTotal++;
 
-            Float medicationId;
-            ResearchResultItem resultItem;
-            if( filters.getPrimaryDataset().equals("prescribedMeds") ){
+			Float medicationId;
+			ResearchResultItem resultItem;
+			if( filters.getPrimaryDataset().equals("prescribedMeds") ){
 
-                List<PatientPrescription> prescriptions = encounter.getPatientPrescriptions();
-                Map<Float, String> primaryValuemap = resultSet.getPrimaryValueMap();
-                if( primaryValuemap == null ){
+				List<PatientPrescription> prescriptions = encounter.getPatientPrescriptions();
+				Map<Float, String> primaryValuemap = resultSet.getPrimaryValueMap();
+				if( primaryValuemap == null ){
 
-                    primaryValuemap = new HashMap<>();
-                }
+					primaryValuemap = new HashMap<>();
+				}
 
-                for( PatientPrescription script : prescriptions ) {
+				for( PatientPrescription script : prescriptions ) {
 
-                    // skip items with replacement Id
-                    if( script.getPatientPrescriptionReplacements() != null && script.getPatientPrescriptionReplacements().size() > 0 ) continue;
+					// skip items with replacement Id
+					if( script.getPatientPrescriptionReplacements() != null && script.getPatientPrescriptionReplacements().size() > 0 ) continue;
 
-                    medicationId =  (float)script.getId();
-                    // total patients for each value in map
-                    if (datasetBuilder.containsKey(medicationId)){
+					medicationId =  (float)script.getId();
+					// total patients for each value in map
+					if (datasetBuilder.containsKey(medicationId)){
 
-                        resultItem = datasetBuilder.get(medicationId);
+						resultItem = datasetBuilder.get(medicationId);
 
-                    } else {
+					} else {
 
-                        resultItem = new ResearchResultItem();
-                        resultItem.setPrimaryName(Float.toString(script.getId()));
-                    }
-                    // increment total by 1
-                    float currentValue = resultItem.getPrimaryValue();
-                    resultItem.setPrimaryValue(currentValue + 1);
+						resultItem = new ResearchResultItem();
+						resultItem.setPrimaryName(Float.toString(script.getId()));
+					}
+					// increment total by 1
+					float currentValue = resultItem.getPrimaryValue();
+					resultItem.setPrimaryValue(currentValue + 1);
 
-                    if( !primaryValuemap.containsKey(medicationId) ){
+					if( !primaryValuemap.containsKey(medicationId) ){
 
-                        primaryValuemap.put(medicationId, script.getMedication().getName());
-                    }
-                    // put result item back into map
-                    datasetBuilder.put(medicationId, resultItem);
-                }
-                resultSet.setPrimaryValueMap(primaryValuemap);
+						primaryValuemap.put(medicationId, script.getMedication().getName());
+					}
+					// put result item back into map
+					datasetBuilder.put(medicationId, resultItem);
+				}
+				resultSet.setPrimaryValueMap(primaryValuemap);
 
-            }
+			}
 
-            else if( filters.getPrimaryDataset().equals("dispensedMeds") ){
+			else if( filters.getPrimaryDataset().equals("dispensedMeds") ){
 
-                List<PatientPrescription> prescriptions = encounter.getPatientPrescriptions();
-                Map<Float, String> primaryValuemap = resultSet.getPrimaryValueMap();
-                if( primaryValuemap == null ){
+				List<PatientPrescription> prescriptions = encounter.getPatientPrescriptions();
+				Map<Float, String> primaryValuemap = resultSet.getPrimaryValueMap();
+				if( primaryValuemap == null ){
 
-                    primaryValuemap = new HashMap<>();
-                }
+					primaryValuemap = new HashMap<>();
+				}
 
-                for( PatientPrescription script : prescriptions ) {
+				for( PatientPrescription script : prescriptions ) {
 
-                    // only count medications actually dispensed
-                    if( script.getDateDispensed() == null ) continue;
+					// only count medications actually dispensed
+					if( script.getDateDispensed() == null ) continue;
 
-                    medicationId =  (float)script.getId();
-                    // total patients for each value in map
-                    if (datasetBuilder.containsKey(medicationId)){
+					medicationId =  (float)script.getId();
+					// total patients for each value in map
+					if (datasetBuilder.containsKey(medicationId)){
 
-                        resultItem = datasetBuilder.get(medicationId);
+						resultItem = datasetBuilder.get(medicationId);
 
-                    } else {
+					} else {
 
-                        resultItem = new ResearchResultItem();
-                        resultItem.setPrimaryName(Float.toString(script.getId()));
-                    }
-                    // increment total by 1
-                    float currentValue = resultItem.getPrimaryValue();
-                    resultItem.setPrimaryValue(currentValue + 1);
+						resultItem = new ResearchResultItem();
+						resultItem.setPrimaryName(Float.toString(script.getId()));
+					}
+					// increment total by 1
+					float currentValue = resultItem.getPrimaryValue();
+					resultItem.setPrimaryValue(currentValue + 1);
 
-                    if( !primaryValuemap.containsKey(medicationId) ){
+					if( !primaryValuemap.containsKey(medicationId) ){
 
-                        primaryValuemap.put(medicationId, script.getMedication().getName());
-                    }
-                    // put result item back into map
-                    datasetBuilder.put(medicationId, resultItem);
-                }
-                resultSet.setPrimaryValueMap(primaryValuemap);
+						primaryValuemap.put(medicationId, script.getMedication().getName());
+					}
+					// put result item back into map
+					datasetBuilder.put(medicationId, resultItem);
+				}
+				resultSet.setPrimaryValueMap(primaryValuemap);
 
-            }
+			}
 
-        }
+		}
 
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
-        resultSet.setTotalPatients(patientsTotal);
-        resultSet.setTotalEncounters(encountersTotal);
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
+		resultSet.setTotalPatients(patientsTotal);
+		resultSet.setTotalEncounters(encountersTotal);
 
-        return resultSet;
-    }
+		return resultSet;
+	}
 
-    // do stuff specific to vitals request
-    private ResearchResultSetItem buildVitalResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
+	// do stuff specific to vitals request
+	private ResearchResultSetItem buildVitalResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-        // Get vital obj to use vitalId in Encounter vital_value map
-        String vitalName = filters.getPrimaryDataset();
-        ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", vitalName);
-        IVital vital = vitalRepository.findOne(query);
+		// Get vital obj to use vitalId in Encounter vital_value map
+		String vitalName = filters.getPrimaryDataset();
+		ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", vitalName);
+		IVital vital = vitalRepository.findOne(query);
 
-        if( vital == null ){
+		if( vital == null ){
 
-            // no results if requested vital doesn't exist
-            return new ResearchResultSetItem();
-        }
+			// no results if requested vital doesn't exist
+			return new ResearchResultSetItem();
+		}
 
-        // used to calculate average
-        float totalForAvg = 0;
-        float encountersTotal = 0;
-        float patientsTotal = 0;
+		// used to calculate average
+		float totalForAvg = 0;
+		float encountersTotal = 0;
+		float patientsTotal = 0;
 
-        // Map to keep track of total patient for each vital_value
-        // Keep keys in sorted order while totaling patients
-        Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
+		// Map to keep track of total patient for each vital_value
+		// Keep keys in sorted order while totaling patients
+		Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
 
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
 
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType(vitalName);
-        resultSet.setUnitOfMeasurement(vital.getUnitOfMeasurement());
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType(vitalName);
+		resultSet.setUnitOfMeasurement(vital.getUnitOfMeasurement());
 
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-            IPatient patient = encounter.getPatient();
+			IPatient patient = encounter.getPatient();
 
-            // Get vital value
-            ResearchEncounterVital vitals = encounter.getEncounterVitals().get(vital.getId());
+			// Get vital value
+			ResearchEncounterVital vitals = encounter.getEncounterVitals().get(vital.getId());
 
-            // end loop if needed vital does not exist
-            if( vitals == null ) continue;
+			// end loop if needed vital does not exist
+			if( vitals == null ) continue;
 
-            Float vitalValue = vitals.getVitalValue();
-            //Float vitalValue = (float) encounter.getEncounterVital().getVitalValue();
+			Float vitalValue = vitals.getVitalValue();
+			//Float vitalValue = (float) encounter.getEncounterVital().getVitalValue();
 
-            if( vitalValue == null ) continue;
+			if( vitalValue == null ) continue;
 
-            // skip encounter if age is out of range
-            if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
+			// skip encounter if age is out of range
+			if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
 
-            encountersTotal++;
+			encountersTotal++;
 
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-            // increment total to calculate average
-            totalForAvg += vitalValue;
-            patientsTotal++;
+			// increment total to calculate average
+			totalForAvg += vitalValue;
+			patientsTotal++;
 
-            // set RANGE LOW and HIGH if needed
-            if (vitalValue > resultSet.getDataRangeHigh()) {
+			// set RANGE LOW and HIGH if needed
+			if (vitalValue > resultSet.getDataRangeHigh()) {
 
-                resultSet.setDataRangeHigh(vitalValue);
-            }
-            if (vitalValue < resultSet.getDataRangeLow()) {
+				resultSet.setDataRangeHigh(vitalValue);
+			}
+			if (vitalValue < resultSet.getDataRangeLow()) {
 
-                resultSet.setDataRangeLow(vitalValue);
-            }
+				resultSet.setDataRangeLow(vitalValue);
+			}
 
-            // total patients for each value in map
-            ResearchResultItem resultItem;
-            if (datasetBuilder.containsKey(vitalValue)) {
+			// total patients for each value in map
+			ResearchResultItem resultItem;
+			if (datasetBuilder.containsKey(vitalValue)) {
 
-                resultItem = datasetBuilder.get(vitalValue);
+				resultItem = datasetBuilder.get(vitalValue);
 
-            } else {
+			} else {
 
-                resultItem = new ResearchResultItem();
-                resultItem.setPrimaryName(Float.toString(vitalValue));
-            }
-            // increment total by 1
-            float currentValue = resultItem.getPrimaryValue();
+				resultItem = new ResearchResultItem();
+				resultItem.setPrimaryName(Float.toString(vitalValue));
+			}
+			// increment total by 1
+			float currentValue = resultItem.getPrimaryValue();
 
-            resultItem.setPrimaryValue(currentValue + 1);
+			resultItem.setPrimaryValue(currentValue + 1);
 
-            // get secondary data
-            if (filters.getSecondaryDataset() != null) {
-                if (filters.getSecondaryDataset().equals("gender")) {
+			// get secondary data
+			if (filters.getSecondaryDataset() != null) {
+				buildSecondaryData(datasetBuilder, resultItem, resultSet, filters, encounter, patient);
+			}
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+			// put result item back into map
+			datasetBuilder.put(vitalValue, resultItem);
+		}
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "Male");
-                        secondaryResultMap.put(1.0f, "Female");
-                        secondaryResultMap.put(2.0f, "N/A");
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
+		resultSet.setTotalPatients(patientsTotal);
+		resultSet.setTotalEncounters(encountersTotal);
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+		// save AVERAGE
+		float average = totalForAvg / patientsTotal;
+		resultSet.setAverage(average);
 
-                    String gender = "2.0";
-                    if (patient.getSex() == null) {
-                        gender = "2.0";
-                    } else if (patient.getSex().matches("(?i:Male)")) {
-                        gender = "0.0";
-                    } else if (patient.getSex().matches("(?i:Female)")) {
-                        gender = "1.0";
-                    }
+		// Standard Deviation -- might be used to detect outliers
+		double devSum = 0.0;
+		for( ResearchResultItem item : resultSet.getDataset() ){
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+			//(indexed value - mean)^2
+			devSum += Math.pow(item.getPrimaryValue() - average, 2);
+		}
+		resultSet.setStandardDeviation(Math.sqrt(devSum));
 
-                        secondaryData = new HashMap<String, Float>();
+		return resultSet;
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                        secondaryData.put("2.0", 0.0f);
-                    }
+	}
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(gender);
-                    secondaryData.put(gender, secTotal + 1.0f);
+	// do stuff specific to height request - use total in inches
+	private ResearchResultSetItem buildHeightResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
 
-                    resultItem.setSecondaryData(secondaryData);
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-                } else if (filters.getSecondaryDataset().equals("pregnancyStatus")) {
+		// Get vital obj to use vitalId in Encounter vital_value map
+		String vitalName = filters.getPrimaryDataset();
+		ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", "heightFeet");
+		IVital vital = vitalRepository.findOne(query);
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+		Integer heightFeetId = vital.getId();
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "No");
-                        secondaryResultMap.put(1.0f, "Yes");
+		query = QueryProvider.getVitalQuery().where().eq("name", "heightInches");
+		vital = vitalRepository.findOne(query);
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+		Integer heightInchesId = vital.getId();
 
-                    Integer weeksPregnant = getWeeksPregnant( encounter );
-                    String pregnancyStatus = "0.0";
-                    if( weeksPregnant >  0 ){
-                        pregnancyStatus = "1.0";
-                    }
+		// used to calculate average
+		float totalForAvg = 0;
+		float encountersTotal = 0;
+		float patientsTotal = 0;
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+		// Map to keep track of total patient for each vital_value
+		// Keep keys in sorted order while totaling patients
+		Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
 
-                        secondaryData = new HashMap<String, Float>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                    }
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType(vitalName);
+		resultSet.setUnitOfMeasurement(vital.getUnitOfMeasurement());
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(pregnancyStatus);
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-                    secondaryData.put( pregnancyStatus, secTotal + 1.0f);
+			IPatient patient = encounter.getPatient();
 
-                    resultItem.setSecondaryData(secondaryData);
-                }
-            }
+			// Get vital value - heightFeet and heightInches
+			ResearchEncounterVital vitalFeet = encounter.getEncounterVitals().get(heightFeetId);
+			ResearchEncounterVital vitalInches = encounter.getEncounterVitals().get(heightInchesId);
 
-            // put result item back into map
-            datasetBuilder.put(vitalValue, resultItem);
-        }
+			// height values may not exist
+			Float vitalValue = 0.0f;
+			if( vitalFeet != null ){
 
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
-        resultSet.setTotalPatients(patientsTotal);
-        resultSet.setTotalEncounters(encountersTotal);
+				vitalValue += vitalFeet.getVitalValue() * 12;
+			}
+			if( vitalInches != null ){
 
-        // save AVERAGE
-        float average = totalForAvg / patientsTotal;
-        resultSet.setAverage(average);
+				vitalValue += vitalInches.getVitalValue();
+			}
 
-        // Standard Deviation -- might be used to detect outliers
-        double devSum = 0.0;
-        for( ResearchResultItem item : resultSet.getDataset() ){
+			// if feet or inches were not found, skip to next encounter
+			if( vitalValue == 0.0f ) continue;
 
-            //(indexed value - mean)^2
-            devSum += Math.pow(item.getPrimaryValue() - average, 2);
-        }
-        resultSet.setStandardDeviation(Math.sqrt(devSum));
+			// skip encounter if age is out of range
+			if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
 
-        return resultSet;
+			encountersTotal++;
 
-    }
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-    // do stuff specific to height request - use total in inches
-    private ResearchResultSetItem buildHeightResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
+			// increment total to calculate average
+			totalForAvg += vitalValue;
+			patientsTotal++;
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+			// set RANGE LOW and HIGH if needed
+			if (vitalValue > resultSet.getDataRangeHigh()) {
 
-        // Get vital obj to use vitalId in Encounter vital_value map
-        String vitalName = filters.getPrimaryDataset();
-        ExpressionList<Vital> query = QueryProvider.getVitalQuery().where().eq("name", "heightFeet");
-        IVital vital = vitalRepository.findOne(query);
+				resultSet.setDataRangeHigh(vitalValue);
+			}
+			if (vitalValue < resultSet.getDataRangeLow()) {
 
-        Integer heightFeetId = vital.getId();
+				resultSet.setDataRangeLow(vitalValue);
+			}
 
-        query = QueryProvider.getVitalQuery().where().eq("name", "heightInches");
-        vital = vitalRepository.findOne(query);
+			// total patients for each value in map
+			ResearchResultItem resultItem;
+			if (datasetBuilder.containsKey(vitalValue)) {
 
-        Integer heightInchesId = vital.getId();
+				resultItem = datasetBuilder.get(vitalValue);
 
-        // used to calculate average
-        float totalForAvg = 0;
-        float encountersTotal = 0;
-        float patientsTotal = 0;
+			} else {
 
-        // Map to keep track of total patient for each vital_value
-        // Keep keys in sorted order while totaling patients
-        Map<Float, ResearchResultItem> datasetBuilder = new TreeMap<>();
+				resultItem = new ResearchResultItem();
+				resultItem.setPrimaryName(Float.toString(vitalValue));
+			}
+			// increment total by 1
+			float currentValue = resultItem.getPrimaryValue();
 
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
+			resultItem.setPrimaryValue(currentValue + 1);
 
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType(vitalName);
-        resultSet.setUnitOfMeasurement(vital.getUnitOfMeasurement());
+			// get secondary data
+			if (filters.getSecondaryDataset() != null) {
+				if (filters.getSecondaryDataset().equals("gender")) {
 
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
+					// Set valuemap if not already
+					if (resultSet.getSecondaryValueMap() == null) {
 
-            IPatient patient = encounter.getPatient();
+						Map<Float, String> secondaryResultMap = new HashMap<>();
+						secondaryResultMap.put(0.0f, "Male");
+						secondaryResultMap.put(1.0f, "Female");
+						secondaryResultMap.put(2.0f, "N/A");
 
-            // Get vital value - heightFeet and heightInches
-            ResearchEncounterVital vitalFeet = encounter.getEncounterVitals().get(heightFeetId);
-            ResearchEncounterVital vitalInches = encounter.getEncounterVitals().get(heightInchesId);
+						resultSet.setSecondaryValueMap(secondaryResultMap);
+					}
 
-            // height values may not exist
-            Float vitalValue = 0.0f;
-            if( vitalFeet != null ){
+					String gender = "2.0";
+					if (patient.getSex() == null) {
+						gender = "2.0";
+					} else if (patient.getSex().matches("(?i:Male)")) {
+						gender = "0.0";
+					} else if (patient.getSex().matches("(?i:Female)")) {
+						gender = "1.0";
+					}
 
-                vitalValue += vitalFeet.getVitalValue() * 12;
-            }
-            if( vitalInches != null ){
+					Map<String, Float> secondaryData = resultItem.getSecondaryData();
+					// Initialize secondary data
+					if (secondaryData == null) {
 
-                vitalValue += vitalInches.getVitalValue();
-            }
+						secondaryData = new HashMap<String, Float>();
 
-            // if feet or inches were not found, skip to next encounter
-            if( vitalValue == 0.0f ) continue;
+						// Make sure all keys exist
+						secondaryData.put("0.0", 0.0f);
+						secondaryData.put("1.0", 0.0f);
+						secondaryData.put("2.0", 0.0f);
+					}
 
-            // skip encounter if age is out of range
-            if( vitalValue < filters.getFilterRangeStart() || vitalValue > filters.getFilterRangeEnd() ) continue;
+					// Add patient to secondary running total
+					// key will exist after initialization above
+					Float secTotal = secondaryData.get(gender);
+					secondaryData.put(gender, secTotal + 1.0f);
 
-            encountersTotal++;
+					resultItem.setSecondaryData(secondaryData);
 
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
+				} else if (filters.getSecondaryDataset().equals("pregnancyStatus")) {
 
-            // increment total to calculate average
-            totalForAvg += vitalValue;
-            patientsTotal++;
+					// Set valuemap if not already
+					if (resultSet.getSecondaryValueMap() == null) {
 
-            // set RANGE LOW and HIGH if needed
-            if (vitalValue > resultSet.getDataRangeHigh()) {
+						Map<Float, String> secondaryResultMap = new HashMap<>();
+						secondaryResultMap.put(0.0f, "No");
+						secondaryResultMap.put(1.0f, "Yes");
 
-                resultSet.setDataRangeHigh(vitalValue);
-            }
-            if (vitalValue < resultSet.getDataRangeLow()) {
+						resultSet.setSecondaryValueMap(secondaryResultMap);
+					}
 
-                resultSet.setDataRangeLow(vitalValue);
-            }
+					Integer wksPregnant = getWeeksPregnant( encounter );
 
-            // total patients for each value in map
-            ResearchResultItem resultItem;
-            if (datasetBuilder.containsKey(vitalValue)) {
+					String pregnancyStatus = "0.0";
+					if (wksPregnant > 0) {
+						pregnancyStatus = "1.0";
+					}
 
-                resultItem = datasetBuilder.get(vitalValue);
+					Map<String, Float> secondaryData = resultItem.getSecondaryData();
+					// Initialize secondary data
+					if (secondaryData == null) {
 
-            } else {
+						secondaryData = new HashMap<String, Float>();
 
-                resultItem = new ResearchResultItem();
-                resultItem.setPrimaryName(Float.toString(vitalValue));
-            }
-            // increment total by 1
-            float currentValue = resultItem.getPrimaryValue();
+						// Make sure all keys exist
+						secondaryData.put("0.0", 0.0f);
+						secondaryData.put("1.0", 0.0f);
+					}
 
-            resultItem.setPrimaryValue(currentValue + 1);
+					// Add patient to secondary running total
+					// key will exist after initialization above
+					Float secTotal = secondaryData.get(pregnancyStatus);
+					secondaryData.put(pregnancyStatus, secTotal + 1.0f);
 
-            // get secondary data
-            if (filters.getSecondaryDataset() != null) {
-                if (filters.getSecondaryDataset().equals("gender")) {
+					resultItem.setSecondaryData(secondaryData);
+				}
+				else if( filters.getSecondaryDataset().equals("age") ){
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+					// Get patient Age - as of encounter date (Triage Visit)
+					Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "Male");
-                        secondaryResultMap.put(1.0f, "Female");
-                        secondaryResultMap.put(2.0f, "N/A");
+				}
+			}
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+			// put result item back into map
+			datasetBuilder.put(vitalValue, resultItem);
+		}
 
-                    String gender = "2.0";
-                    if (patient.getSex() == null) {
-                        gender = "2.0";
-                    } else if (patient.getSex().matches("(?i:Male)")) {
-                        gender = "0.0";
-                    } else if (patient.getSex().matches("(?i:Female)")) {
-                        gender = "1.0";
-                    }
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
+		resultSet.setTotalPatients(encountersTotal);
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+		// save AVERAGE
+		float average = totalForAvg / patientsTotal;
+		resultSet.setAverage(average);
 
-                        secondaryData = new HashMap<String, Float>();
+		return resultSet;
+	}
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                        secondaryData.put("2.0", 0.0f);
-                    }
+	private void buildSecondaryData(Map<Float, ResearchResultItem> datasetBuilder, ResearchResultItem resultItem, ResearchResultSetItem resultSet, ResearchFilterItem filters, IResearchEncounter encounter, IPatient patient) {
+		if (filters.getSecondaryDataset().equals("gender")) {
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(gender);
-                    secondaryData.put(gender, secTotal + 1.0f);
+			// Set valuemap if not already
+			if (resultSet.getSecondaryValueMap() == null) {
 
-                    resultItem.setSecondaryData(secondaryData);
+				Map<Float, String> secondaryResultMap = new HashMap<>();
+				secondaryResultMap.put(0.0f, "Male");
+				secondaryResultMap.put(1.0f, "Female");
+				secondaryResultMap.put(2.0f, "N/A");
 
-                } else if (filters.getSecondaryDataset().equals("pregnancyStatus")) {
+				resultSet.setSecondaryValueMap(secondaryResultMap);
+			}
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+			String gender = "2.0";
+			if (patient.getSex() == null) {
+				gender = "2.0";
+			} else if (patient.getSex().matches("(?i:Male)")) {
+				gender = "0.0";
+			} else if (patient.getSex().matches("(?i:Female)")) {
+				gender = "1.0";
+			}
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "No");
-                        secondaryResultMap.put(1.0f, "Yes");
+			Map<String, Float> secondaryData = resultItem.getSecondaryData();
+			// Initialize secondary data
+			if (secondaryData == null) {
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+				secondaryData = new HashMap<String, Float>();
 
-                    Integer wksPregnant = getWeeksPregnant( encounter );
+				// Make sure all keys exist
+				secondaryData.put("0.0", 0.0f);
+				secondaryData.put("1.0", 0.0f);
+				secondaryData.put("2.0", 0.0f);
+			}
 
-                    String pregnancyStatus = "0.0";
-                    if (wksPregnant > 0) {
-                        pregnancyStatus = "1.0";
-                    }
+			// Add patient to secondary running total
+			// key will exist after initialization above
+			Float secTotal = secondaryData.get(gender);
+			secondaryData.put(gender, secTotal + 1.0f);
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+			resultItem.setSecondaryData(secondaryData);
 
-                        secondaryData = new HashMap<String, Float>();
+		} else if (filters.getSecondaryDataset().equals("pregnancyStatus")) {
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                    }
+			// Set valuemap if not already
+			if (resultSet.getSecondaryValueMap() == null) {
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(pregnancyStatus);
-                    secondaryData.put(pregnancyStatus, secTotal + 1.0f);
+				Map<Float, String> secondaryResultMap = new HashMap<>();
+				secondaryResultMap.put(0.0f, "No");
+				secondaryResultMap.put(1.0f, "Yes");
 
-                    resultItem.setSecondaryData(secondaryData);
-                }
-                else if( filters.getSecondaryDataset().equals("age") ){
+				resultSet.setSecondaryValueMap(secondaryResultMap);
+			}
 
-                    // Get patient Age - as of encounter date (Triage Visit)
-                    Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
+			Integer wksPregnant = getWeeksPregnant( encounter );
 
-                }
-            }
+			String pregnancyStatus = "0.0";
+			if (wksPregnant > 0) {
+				pregnancyStatus = "1.0";
+			}
 
-            // put result item back into map
-            datasetBuilder.put(vitalValue, resultItem);
-        }
+			Map<String, Float> secondaryData = resultItem.getSecondaryData();
+			// Initialize secondary data
+			if (secondaryData == null) {
 
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
-        resultSet.setTotalPatients(encountersTotal);
+				secondaryData = new HashMap<String, Float>();
 
-        // save AVERAGE
-        float average = totalForAvg / patientsTotal;
-        resultSet.setAverage(average);
+				// Make sure all keys exist
+				secondaryData.put("0.0", 0.0f);
+				secondaryData.put("1.0", 0.0f);
+			}
 
-        return resultSet;
-    }
+			// Add patient to secondary running total
+			// key will exist after initialization above
+			Float secTotal = secondaryData.get(pregnancyStatus);
+			secondaryData.put(pregnancyStatus, secTotal + 1.0f);
+			resultItem.setSecondaryData(secondaryData);
+		}
+	}
 
-    // do stuff specific to age request
-    private ResearchResultSetItem buildAgeResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters){
+	// do stuff specific to age request
+	private ResearchResultSetItem buildAgeResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters){
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-        // used to calculate average
-        float totalForAvg = 0;
-        float encountersTotal = 0;
-        float patientsTotal = 0;
+		// used to calculate average
+		float totalForAvg = 0;
+		float encountersTotal = 0;
+		float patientsTotal = 0;
 
-        // Map to keep track of total patient for each age
-        Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType("age");
-        resultSet.setUnitOfMeasurement("years");
+		// Map to keep track of total patient for each age
+		Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType("age");
+		resultSet.setUnitOfMeasurement("years");
 
 
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-            IPatient patient = encounter.getPatient();
+			IPatient patient = encounter.getPatient();
 
-            // Get patient Age - as of encounter date (Triage Visit)
-            Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
+			// Get patient Age - as of encounter date (Triage Visit)
+			Float age = (float) Math.floor(dateUtils.getAgeAsOfDateFloat(patient.getAge(), encounter.getDateOfTriageVisit()));
 
-            // skip encounter if age is out of range
-            if( age < filters.getFilterRangeStart() || age > filters.getFilterRangeEnd() ) continue;
+			// skip encounter if age is out of range
+			if( age < filters.getFilterRangeStart() || age > filters.getFilterRangeEnd() ) continue;
 
-            encountersTotal++;
+			encountersTotal++;
 
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-            // increment total to calculate average
-            totalForAvg += age;
-            patientsTotal++;
+			// increment total to calculate average
+			totalForAvg += age;
+			patientsTotal++;
 
-            // set RANGE LOW and HIGH if needed
-            if (age > resultSet.getDataRangeHigh()) {
+			// set RANGE LOW and HIGH if needed
+			if (age > resultSet.getDataRangeHigh()) {
 
-                resultSet.setDataRangeHigh(age);
-            }
-            if (age < resultSet.getDataRangeLow()) {
+				resultSet.setDataRangeHigh(age);
+			}
+			if (age < resultSet.getDataRangeLow()) {
 
-                resultSet.setDataRangeLow(age);
-            }
+				resultSet.setDataRangeLow(age);
+			}
 
-            // total patients for each value in map
-            ResearchResultItem resultItem;
-            if (datasetBuilder.containsKey(age)) {
+			// total patients for each value in map
+			ResearchResultItem resultItem;
+			if (datasetBuilder.containsKey(age)) {
 
-                resultItem = datasetBuilder.get(age);
+				resultItem = datasetBuilder.get(age);
 
-            } else {
+			} else {
 
-                resultItem = new ResearchResultItem();
-                resultItem.setPrimaryName(Float.toString(age));
-            }
-            // increment total by 1
-            float currentValue = resultItem.getPrimaryValue();
+				resultItem = new ResearchResultItem();
+				resultItem.setPrimaryName(Float.toString(age));
+			}
+			// increment total by 1
+			float currentValue = resultItem.getPrimaryValue();
 
-            resultItem.setPrimaryValue(currentValue + 1);
+			resultItem.setPrimaryValue(currentValue + 1);
 
-            // @TODO - get secondary data
-            if (filters.getSecondaryDataset() != null) {
-                if (filters.getSecondaryDataset().equals("gender")) {
+			// @TODO - get secondary data
+			if (filters.getSecondaryDataset() != null) {
+				buildSecondaryData(datasetBuilder,resultItem, resultSet, filters, encounter, patient);
+			}
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+			// put result item back into map
+			datasetBuilder.put(age, resultItem);
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "Male");
-                        secondaryResultMap.put(1.0f, "Female");
-                        secondaryResultMap.put(2.0f, "N/A");
+		}
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
+		resultSet.setTotalPatients(patientsTotal);
+		resultSet.setTotalEncounters(encountersTotal);
 
-                    String gender = "2.0";
-                    if (patient.getSex() == null) {
-                        gender = "2.0";
-                    } else if (patient.getSex().matches("(?i:Male)")) {
-                        gender = "0.0";
-                    } else if (patient.getSex().matches("(?i:Female)")) {
-                        gender = "1.0";
-                    }
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+		// save average
+		float average = totalForAvg / patientsTotal;
+		resultSet.setAverage(average);
 
-                        secondaryData = new HashMap<String, Float>();
+		return resultSet;
+	}
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                        secondaryData.put("2.0", 0.0f);
-                    }
+	// do stuff specific to pregnancy requests
+	private ResearchResultSetItem buildPregnancyResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters){
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(gender);
-                    secondaryData.put(gender, secTotal + 1.0f);
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-                    resultItem.setSecondaryData(secondaryData);
+		float totalForAvg = 0.0f;
+		float encountersTotal = 0;
+		float patientsTotal = 0;
 
-                } else if (filters.getSecondaryDataset().equals("pregnancyStatus")) {
+		// Map to keep track of total patient for each age
+		Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType(filters.getPrimaryDataset());
 
-                    // Set valuemap if not already
-                    if (resultSet.getSecondaryValueMap() == null) {
+		// Set measurement unit for Weeks Pregnant
+		if( filters.getPrimaryDataset().equals("pregnancyTime")) {
+			resultSet.setUnitOfMeasurement("weeks");
+		}
 
-                        Map<Float, String> secondaryResultMap = new HashMap<>();
-                        secondaryResultMap.put(0.0f, "No");
-                        secondaryResultMap.put(1.0f, "Yes");
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-                        resultSet.setSecondaryValueMap(secondaryResultMap);
-                    }
+			IPatient patient = encounter.getPatient();
 
-                    Integer wksPregnant = getWeeksPregnant( encounter );
+			encountersTotal++;
 
-                    String pregnancyStatus = "0.0";
-                    if (wksPregnant > 0) {
-                        pregnancyStatus = "1.0";
-                    }
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-                    Map<String, Float> secondaryData = resultItem.getSecondaryData();
-                    // Initialize secondary data
-                    if (secondaryData == null) {
+			if( filters.getPrimaryDataset().equals("pregnancyStatus")) {
 
-                        secondaryData = new HashMap<String, Float>();
+				// increment total encounters
+				patientsTotal++;
 
-                        // Make sure all keys exist
-                        secondaryData.put("0.0", 0.0f);
-                        secondaryData.put("1.0", 0.0f);
-                    }
+				Map<Float, String> resultMap = new HashMap<>();
+				resultMap.put(0.0f, "No");
+				resultMap.put(1.0f, "Yes");
+				resultSet.setPrimaryValueMap(resultMap);
 
-                    // Add patient to secondary running total
-                    // key will exist after initialization above
-                    Float secTotal = secondaryData.get(pregnancyStatus);
-                    secondaryData.put(pregnancyStatus, secTotal + 1.0f);
+				Integer wksPregnant = getWeeksPregnant( encounter );
+				float pregnancyStatus = 0.0f;
+				if (wksPregnant > 0.0f) {
+					pregnancyStatus = 1.0f;
+				}
 
-                    resultItem.setSecondaryData(secondaryData);
-                }
-            }
+				// total patients for each value in map
+				ResearchResultItem resultItem;
+				if (datasetBuilder.containsKey(pregnancyStatus)) {
 
-            // put result item back into map
-            datasetBuilder.put(age, resultItem);
+					resultItem = datasetBuilder.get(pregnancyStatus);
 
-        }
+				} else {
 
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<ResearchResultItem>(datasetBuilder.values()));
-        resultSet.setTotalPatients(patientsTotal);
-        resultSet.setTotalEncounters(encountersTotal);
+					resultItem = new ResearchResultItem();
+					resultItem.setPrimaryName(Float.toString(pregnancyStatus));
+				}
+				// increment total by 1
+				float currentValue = resultItem.getPrimaryValue();
+				resultItem.setPrimaryValue(currentValue + 1);
 
+				// put result item back into map
+				datasetBuilder.put(pregnancyStatus, resultItem);
+			}
+			else if( filters.getPrimaryDataset().equals("pregnancyTime")){
 
-        // save average
-        float average = totalForAvg / patientsTotal;
-        resultSet.setAverage(average);
+				Integer wksPregnant = getWeeksPregnant( encounter );
 
-        return resultSet;
-    }
+				// only count patients who are actually pregnant
+				if( wksPregnant == 0 ) continue;
 
-    // do stuff specific to pregnancy requests
-    private ResearchResultSetItem buildPregnancyResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters){
+				//if( wksPregnant < filters.getFilterRangeStart() || wksPregnant > filters.getFilterRangeEnd() ) continue;
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+				// set RANGE LOW and HIGH if needed
+				if (wksPregnant > resultSet.getDataRangeHigh()) {
 
-        float totalForAvg = 0.0f;
-        float encountersTotal = 0;
-        float patientsTotal = 0;
+					resultSet.setDataRangeHigh(wksPregnant);
+				}
+				if (wksPregnant < resultSet.getDataRangeLow()) {
 
-        // Map to keep track of total patient for each age
-        Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType(filters.getPrimaryDataset());
+					resultSet.setDataRangeLow(wksPregnant);
+				}
 
-        // Set measurement unit for Weeks Pregnant
-        if( filters.getPrimaryDataset().equals("pregnancyTime")) {
-            resultSet.setUnitOfMeasurement("weeks");
-        }
+				// increment total encounters
+				patientsTotal++;
+				totalForAvg += wksPregnant;
 
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
+				// total patients for each value in map
+				ResearchResultItem resultItem;
+				if (datasetBuilder.containsKey((float)wksPregnant)) {
 
-            IPatient patient = encounter.getPatient();
+					resultItem = datasetBuilder.get((float)wksPregnant);
 
-            encountersTotal++;
+				} else {
 
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
+					resultItem = new ResearchResultItem();
+					resultItem.setPrimaryName(Float.toString(wksPregnant));
+				}
+				// increment total by 1
+				float currentValue = resultItem.getPrimaryValue();
+				resultItem.setPrimaryValue(currentValue + 1);
 
-            if( filters.getPrimaryDataset().equals("pregnancyStatus")) {
+				// put result item back into map
+				datasetBuilder.put((float)wksPregnant, resultItem);
+			}
 
-                // increment total encounters
-                patientsTotal++;
+		}
 
-                Map<Float, String> resultMap = new HashMap<>();
-                resultMap.put(0.0f, "No");
-                resultMap.put(1.0f, "Yes");
-                resultSet.setPrimaryValueMap(resultMap);
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<>(datasetBuilder.values()));
+		resultSet.setTotalPatients(patientsTotal);
+		resultSet.setTotalEncounters(encountersTotal);
 
-                Integer wksPregnant = getWeeksPregnant( encounter );
-                float pregnancyStatus = 0.0f;
-                if (wksPregnant > 0.0f) {
-                    pregnancyStatus = 1.0f;
-                }
+		// save average
+		if( totalForAvg > 0.0f ) {
+			float average = totalForAvg / patientsTotal;
+			resultSet.setAverage(average);
+		}
 
-                // total patients for each value in map
-                ResearchResultItem resultItem;
-                if (datasetBuilder.containsKey(pregnancyStatus)) {
+		return resultSet;
+	}
 
-                    resultItem = datasetBuilder.get(pregnancyStatus);
+	// do stuff specific to gender requests
+	private ResearchResultSetItem buildGenderResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
 
-                } else {
+		// do nothing if encounters is empty
+		if( encounters.isEmpty() ) return new ResearchResultSetItem();
 
-                    resultItem = new ResearchResultItem();
-                    resultItem.setPrimaryName(Float.toString(pregnancyStatus));
-                }
-                // increment total by 1
-                float currentValue = resultItem.getPrimaryValue();
-                resultItem.setPrimaryValue(currentValue + 1);
+		float encountersTotal = 0.0f;
+		float patientsTotal = 0.0f;
 
-                // put result item back into map
-                datasetBuilder.put(pregnancyStatus, resultItem);
-            }
-            else if( filters.getPrimaryDataset().equals("pregnancyTime")){
+		// Map to keep track of total patient for each age
+		Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
+		// Keep track of patients, eliminate duplicate encounters
+		Set<Integer> patientIds = new HashSet<>();
+		// Object to send return
+		ResearchResultSetItem resultSet = new ResearchResultSetItem();
+		resultSet.setDataType(filters.getPrimaryDataset());
 
-                Integer wksPregnant = getWeeksPregnant( encounter );
+		// Loop through encounters, get data and build stats
+		for (IResearchEncounter encounter : encounters) {
 
-                // only count patients who are actually pregnant
-                if( wksPregnant == 0 ) continue;
+			IPatient patient = encounter.getPatient();
 
-                //if( wksPregnant < filters.getFilterRangeStart() || wksPregnant > filters.getFilterRangeEnd() ) continue;
+			encountersTotal++;
 
-                // set RANGE LOW and HIGH if needed
-                if (wksPregnant > resultSet.getDataRangeHigh()) {
+			// If patient age has already been counted, don't count again
+			if( patientIds.contains(patient.getId()) ) continue;
+			patientIds.add(patient.getId());
 
-                    resultSet.setDataRangeHigh(wksPregnant);
-                }
-                if (wksPregnant < resultSet.getDataRangeLow()) {
+			// increment total encounters
+			patientsTotal++;
 
-                    resultSet.setDataRangeLow(wksPregnant);
-                }
+			Map<Float, String> resultMap = new HashMap<>();
+			resultMap.put(0.0f, "Male");
+			resultMap.put(1.0f, "Female");
+			resultMap.put(2.0f, "N/A");
+			resultSet.setPrimaryValueMap(resultMap);
 
-                // increment total encounters
-                patientsTotal++;
-                totalForAvg += wksPregnant;
+			float gender = 2.0f;
+			// Do case in-sensitive comparison to be safe
+			//1 = female
+			//0 = male
+			//2 = no sex
+			if (patient.getSex() == null){
+				gender = 2.0f;
+			}else if (patient.getSex().matches("(?i:Male)")) {
+				gender = 0.0f;
+			} else if (patient.getSex().matches("(?i:Female)")) {
+				gender = 1.0f;
+			}
 
-                // total patients for each value in map
-                ResearchResultItem resultItem;
-                if (datasetBuilder.containsKey((float)wksPregnant)) {
+			// total patients for each value in map
+			ResearchResultItem resultItem;
+			if (datasetBuilder.containsKey(gender)) {
 
-                    resultItem = datasetBuilder.get((float)wksPregnant);
+				resultItem = datasetBuilder.get(gender);
 
-                } else {
+			} else {
 
-                    resultItem = new ResearchResultItem();
-                    resultItem.setPrimaryName(Float.toString(wksPregnant));
-                }
-                // increment total by 1
-                float currentValue = resultItem.getPrimaryValue();
-                resultItem.setPrimaryValue(currentValue + 1);
+				resultItem = new ResearchResultItem();
+				resultItem.setPrimaryName(Float.toString(gender));
+			}
+			// increment total by 1
+			float currentValue = resultItem.getPrimaryValue();
+			resultItem.setPrimaryValue(currentValue + 1);
 
-                // put result item back into map
-                datasetBuilder.put((float)wksPregnant, resultItem);
-            }
+			// put result item back into map
+			datasetBuilder.put(gender, resultItem);
+		}
 
-        }
+		// save builder map as list in result set
+		resultSet.setDataset(new ArrayList<>(datasetBuilder.values()));
+		resultSet.setTotalPatients(patientsTotal);
+		resultSet.setTotalEncounters(encountersTotal);
 
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<>(datasetBuilder.values()));
-        resultSet.setTotalPatients(patientsTotal);
-        resultSet.setTotalEncounters(encountersTotal);
+		return resultSet;
 
-        // save average
-        if( totalForAvg > 0.0f ) {
-            float average = totalForAvg / patientsTotal;
-            resultSet.setAverage(average);
-        }
+	}
 
-        return resultSet;
-    }
 
-    // do stuff specific to gender requests
-    private ResearchResultSetItem buildGenderResultSet(List<? extends IResearchEncounter> encounters, ResearchFilterItem filters) {
+	private Integer getWeeksPregnant( IResearchEncounter encounter ){
 
-        // do nothing if encounters is empty
-        if( encounters.isEmpty() ) return new ResearchResultSetItem();
+		ExpressionList<Vital> wkPregnantQuery = QueryProvider.getVitalQuery().where().eq("name", "weeksPregnant");
+		IVital vital = vitalRepository.findOne(wkPregnantQuery);
 
-        float encountersTotal = 0.0f;
-        float patientsTotal = 0.0f;
+		ResearchEncounterVital wksPregnantVital = encounter.getEncounterVitals().get(vital.getId());
 
-        // Map to keep track of total patient for each age
-        Map<Float, ResearchResultItem> datasetBuilder = new LinkedHashMap<>();
-        // Keep track of patients, eliminate duplicate encounters
-        Set<Integer> patientIds = new HashSet<>();
-        // Object to send return
-        ResearchResultSetItem resultSet = new ResearchResultSetItem();
-        resultSet.setDataType(filters.getPrimaryDataset());
-
-        // Loop through encounters, get data and build stats
-        for (IResearchEncounter encounter : encounters) {
-
-            IPatient patient = encounter.getPatient();
-
-            encountersTotal++;
-
-            // If patient age has already been counted, don't count again
-            if( patientIds.contains(patient.getId()) ) continue;
-            patientIds.add(patient.getId());
-
-            // increment total encounters
-            patientsTotal++;
-
-            Map<Float, String> resultMap = new HashMap<>();
-            resultMap.put(0.0f, "Male");
-            resultMap.put(1.0f, "Female");
-            resultMap.put(2.0f, "N/A");
-            resultSet.setPrimaryValueMap(resultMap);
-
-            float gender = 2.0f;
-            // Do case in-sensitive comparison to be safe
-            //1 = female
-            //0 = male
-            //2 = no sex
-            if (patient.getSex() == null){
-                gender = 2.0f;
-            }else if (patient.getSex().matches("(?i:Male)")) {
-                gender = 0.0f;
-            } else if (patient.getSex().matches("(?i:Female)")) {
-                gender = 1.0f;
-            }
-
-            // total patients for each value in map
-            ResearchResultItem resultItem;
-            if (datasetBuilder.containsKey(gender)) {
-
-                resultItem = datasetBuilder.get(gender);
-
-            } else {
-
-                resultItem = new ResearchResultItem();
-                resultItem.setPrimaryName(Float.toString(gender));
-            }
-            // increment total by 1
-            float currentValue = resultItem.getPrimaryValue();
-            resultItem.setPrimaryValue(currentValue + 1);
-
-            // put result item back into map
-            datasetBuilder.put(gender, resultItem);
-        }
-
-        // save builder map as list in result set
-        resultSet.setDataset(new ArrayList<>(datasetBuilder.values()));
-        resultSet.setTotalPatients(patientsTotal);
-        resultSet.setTotalEncounters(encountersTotal);
-
-        return resultSet;
-
-    }
-
-
-    private Integer getWeeksPregnant( IResearchEncounter encounter ){
-
-        ExpressionList<Vital> wkPregnantQuery = QueryProvider.getVitalQuery().where().eq("name", "weeksPregnant");
-        IVital vital = vitalRepository.findOne(wkPregnantQuery);
-
-        ResearchEncounterVital wksPregnantVital = encounter.getEncounterVitals().get(vital.getId());
-
-        if ( wksPregnantVital != null && wksPregnantVital.getVitalValue() > 0) {
-            return Math.round(wksPregnantVital.getVitalValue() );
-        }
-        else{
-            return 0;
-        }
-    }
+		if ( wksPregnantVital != null && wksPregnantVital.getVitalValue() > 0) {
+			return Math.round(wksPregnantVital.getVitalValue() );
+		}
+		else{
+			return 0;
+		}
+	}
 }
